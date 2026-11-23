@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theo dõi giá Binance Futures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9edf0; --panel:#f7f9fa; --ink:#14202b; --mute:#66778a; --line:#d3dbe2;
+  --up:#0b8f6a; --down:#d2453b; --accent:#1f4e79; --track:#dde4ea;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f161d; --panel:#16202a; --ink:#e6edf3; --mute:#8a9bad; --line:#263441;
+    --up:#2dd4a0; --down:#ff6b5e; --accent:#7fb2e5; --track:#26333f; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.45 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px 16px 48px}
+main{max-width:980px;margin:0 auto}
+header{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between;margin-bottom:20px}
+h1{font-size:26px;font-weight:800;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0}
+.clock{text-align:right}
+.clock .t{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.clock .l{color:var(--mute);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+form{display:flex;gap:8px;flex:1 1 280px}
+input,select,button{font:inherit;color:inherit}
+input{flex:1;min-width:0;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+button.add{padding:9px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+:root[data-theme="dark"] button.add,@media (prefers-color-scheme:dark){}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--down)}
+.dot.on{background:var(--up)}
+.msg{min-height:20px;color:var(--down);font-size:13px;margin:0 0 8px}
+ul{list-style:none;margin:0;padding:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:22px 1fr 1.2fr .9fr 1.7fr 1.4fr 32px;gap:12px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.sym b{font-size:16px;font-weight:800}
+.sym small,.chg small,.rng small{display:block;color:var(--mute);font-size:12px}
+.px{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.chg{font-weight:600;font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)}
+.spark svg{display:block;width:100%;height:40px}
+.rng small{font-variant-numeric:tabular-nums;display:flex;justify-content:space-between}
+.track{position:relative;height:6px;border-radius:3px;background:var(--track);margin-bottom:4px}
+.track i{position:absolute;top:-3px;width:4px;height:12px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.grip{width:22px;height:32px;padding:0;border:0;background:none;color:var(--mute);font-size:18px;line-height:1;cursor:grab;touch-action:none;user-select:none;border-radius:6px}
+.grip:hover{color:var(--ink);background:var(--track)}
+.row.drag{background:var(--track);box-shadow:0 4px 14px rgba(0,0,0,.18);position:relative;z-index:2}
+.row.drag .grip{cursor:grabbing}
+.x{width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--mute);font-size:20px;line-height:1;cursor:pointer}
+.x:hover{background:var(--track);color:var(--down)}
+.empty{padding:32px;text-align:center;color:var(--mute)}
+.note{color:var(--mute);font-size:12.5px;margin-top:14px}
+@media (max-width:720px){
+  .row{grid-template-columns:22px 1fr 1fr 32px;grid-template-areas:"h sym px x" "h chg spark spark" "h rng rng rng"}
+  .grip{grid-area:h;align-self:start}
+  .sym{grid-area:sym}.px{grid-area:px;text-align:right}.chg{grid-area:chg}
+  .spark{grid-area:spark}.rng{grid-area:rng}.x{grid-area:x}
+  .clock{text-align:left}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Theo dõi giá Binance Futures</h1>
+      <p class="sub">Mức thay đổi tính từ 07:00 sáng (GMT+7) mỗi ngày.</p>
+    </div>
+    <div class="clock">
+      <div class="t" id="cd">--:--:--</div>
+      <div class="l">đến lần reset tiếp theo lúc 07:00</div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <form id="f" autocomplete="off">
+      <input id="inp" list="syms" placeholder="Thêm cặp, ví dụ BTCUSDT hoặc ETH" aria-label="Mã futures">
+      <datalist id="syms"></datalist>
+      <button class="add" type="submit">Thêm</button>
+    </form>
+    <select id="sort" aria-label="Sắp xếp">
+      <option value="manual">Thứ tự của tôi</option>
+      <option value="up">% tăng nhiều nhất</option>
+      <option value="down">% giảm nhiều nhất</option>
+      <option value="name">Tên A–Z</option>
+    </select>
+    <div class="status"><span class="dot" id="dot"></span><span id="st">Đang kết nối</span></div>
+  </div>
+  <p class="msg" id="msg" role="status"></p>
+
+  <ul id="list"></ul>
+  <p class="note">Dữ liệu từ Binance USDⓈ-M Futures, cập nhật trực tiếp qua WebSocket. Nến ngày của Binance mở lúc 00:00 UTC, trùng 07:00 giờ Việt Nam, nên đường đứt nét trong biểu đồ là giá mở cửa lúc 07:00.</p>
+</main>
+
+<script>
+const REST='https://fapi.binance.com/fapi/v1/';
+const WS='wss://fstream.binance.com/stream?streams=';
+const KEY='bf-watchlist';
+const DAY=86400000;
+const $=s=>document.querySelector(s);
+const listEl=$('#list'), msgEl=$('#msg');
+// Danh sách mặc định: sửa dòng này nếu muốn thay đổi vĩnh viễn trong file
+const DEFAULT_LIST=['BTCUSDT','ETHUSDT','SOLUSDT'];
+let storageOK=true;
+let symbols=load(), D={}, valid=null, ws=null, retry=null, dirty=false, lastDay=dayStart();
+
+function clean(a){return Array.isArray(a)?a.filter(x=>typeof x==='string'&&/^[A-Z0-9]{4,20}$/.test(x)):null}
+function load(){
+  // 1) localStorage  2) cookie  3) #danh-sach trên URL  4) mặc định
+  try{const a=clean(JSON.parse(localStorage.getItem(KEY)));if(a)return a}catch(e){storageOK=false}
+  try{const m=document.cookie.match(/(?:^|; )bfwl=([^;]*)/);if(m){const a=clean(decodeURIComponent(m[1]).split(',').filter(Boolean));if(a)return a}}catch(e){}
+  const h=decodeURIComponent(location.hash.slice(1));
+  if(h){const a=clean(h.toUpperCase().split(',').filter(Boolean));if(a&&a.length)return a}
+  return DEFAULT_LIST.slice();
+}
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(symbols));if(localStorage.getItem(KEY)==null)throw 0}catch(e){storageOK=false}
+  try{document.cookie='bfwl='+encodeURIComponent(symbols.join(','))+';max-age=31536000;path=/;SameSite=Lax'}catch(e){}
+  try{history.replaceState(null,'','#'+symbols.join(','))}catch(e){}
+  if(!storageOK)say('Trình duyệt không cho lưu cục bộ. Hãy đánh dấu trang (bookmark) sau khi chỉnh danh sách: liên kết đã chứa danh sách của bạn.');
+}
+function dayStart(){const n=Date.now();return n-n%DAY}
+function say(t){msgEl.textContent=t||''}
+
+function fmt(p){
+  const d=p>=100?2:p>=1?4:p>=0.01?5:7;
+  return p.toLocaleString('en-US',{minimumFractionDigits:Math.min(2,d),maximumFractionDigits:d});
+}
+function parts(s){const m=s.match(/^(.*?)(USDT|USDC|BUSD)$/);return m?[m[1],m[2]]:[s,'']}
+
+/* ---------- rows ---------- */
+function buildRows(){
+  listEl.innerHTML='';
+  if(!symbols.length){listEl.innerHTML='<li class="empty">Danh sách đang trống. Nhập mã vào ô phía trên để thêm.</li>';return}
+  for(const s of symbols){
+    const [b,q]=parts(s), li=document.createElement('li');
+    li.className='row';li.dataset.s=s;
+    li.innerHTML=`<button class="grip" type="button" aria-label="Kéo để đổi vị trí ${s}. Dùng phím mũi tên lên hoặc xuống" title="Kéo để đổi vị trí">⋮⋮</button>
+      <div class="sym"><b>${b}</b><small>${q} Perpetual</small></div>
+      <div class="px">--</div>
+      <div class="chg">--<small></small></div>
+      <div class="spark"><svg viewBox="0 0 200 40" preserveAspectRatio="none"></svg></div>
+      <div class="rng"><div class="track"><i style="left:50%"></i></div><small><span>--</span><span>--</span></small></div>
+      <button class="x" aria-label="Xóa ${s}" title="Xóa">×</button>`;
+    li.querySelector('.x').onclick=()=>removeSym(s);
+    listEl.appendChild(li);
+  }
+  symbols.forEach(update);
+}
+
+function update(s){
+  const li=listEl.querySelector(`[data-s="${s}"]`), d=D[s];
+  if(!li||!d||d.c==null)return;
+  const ch=d.c-d.o, pct=d.o?ch/d.o*100:0, cls=ch>=0?'up':'down';
+  li.querySelector('.px').textContent=fmt(d.c);
+  const c=li.querySelector('.chg');
+  c.className='chg '+cls;
+  c.firstChild.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';
+  c.querySelector('small').textContent=(ch>=0?'+':'')+fmt(Math.abs(ch)).replace(/^/,ch<0?'-':'');
+  const span=d.h-d.l, pos=span>0?Math.min(1,Math.max(0,(d.c-d.l)/span)):.5;
+  li.querySelector('.track i').style.left=(pos*100)+'%';
+  const sp=li.querySelectorAll('.rng small span');
+  sp[0].textContent=fmt(d.l);sp[1].textContent=fmt(d.h);
+  drawSpark(li.querySelector('svg'),d,cls);
+}
+
+function drawSpark(svg,d,cls){
+  const pts=(d.sp||[]).concat([[Date.now(),d.c]]), t0=dayStart();
+  const vals=pts.map(p=>p[1]).concat(d.o);
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  if(hi===lo){hi+=1;lo-=1}
+  const pad=(hi-lo)*.1; lo-=pad;hi+=pad;
+  const X=t=>((t-t0)/DAY)*200, Y=v=>38-((v-lo)/(hi-lo))*36;
+  const path=pts.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join('');
+  const col=cls==='up'?'var(--up)':'var(--down)';
+  svg.innerHTML=`<line x1="0" x2="200" y1="${Y(d.o).toFixed(1)}" y2="${Y(d.o).toFixed(1)}" stroke="var(--mute)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" opacity=".6"/>
+  <path d="${path}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+}
+
+function applySort(){
+  const m=$('#sort').value; if(m==='manual'){ordered(symbols);return}
+  const pct=s=>{const d=D[s];return d&&d.o?(d.c-d.o)/d.o:-Infinity};
+  const a=symbols.slice();
+  if(m==='up')a.sort((x,y)=>pct(y)-pct(x));
+  else if(m==='down')a.sort((x,y)=>pct(x)-pct(y));
+  else a.sort();
+  ordered(a);
+}
+function ordered(a){
+  const cur=[...listEl.children].map(e=>e.dataset.s);
+  if(cur.join()===a.join())return;
+  a.forEach(s=>{const e=listEl.querySelector(`[data-s="${s}"]`);if(e)listEl.appendChild(e)});
+}
+
+/* ---------- data ---------- */
+async function history(s){
+  try{
+    const [k1,k2]=await Promise.all([
+      fetch(`${REST}klines?symbol=${s}&interval=1d&limit=1`).then(r=>r.json()),
+      fetch(`${REST}klines?symbol=${s}&interval=15m&startTime=${dayStart()}&limit=100`).then(r=>r.json())
+    ]);
+    if(!Array.isArray(k1)||!k1[0])throw 0;
+    const k=k1[0];
+    const old=D[s]||{};
+    D[s]={...old,t:k[0],o:+k[1],h:Math.max(+k[2],old.h||0),l:old.l?Math.min(+k[3],old.l):+k[3],c:old.c??+k[4],
+      sp:Array.isArray(k2)?k2.map(x=>[x[0]+9e5-1,+x[4]]).filter(p=>p[0]<Date.now()-9e5+1):[]};
+    dirty=true;
+  }catch(e){}
+}
+
+function connect(){
+  clearTimeout(retry);
+  if(ws){ws.onclose=null;ws.close();ws=null}
+  if(!symbols.length){setStatus(false,'Chưa có mã nào');return}
+  setStatus(false,'Đang kết nối');
+  ws=new WebSocket(WS+symbols.map(s=>s.toLowerCase()+'@kline_1d').join('/'));
+  ws.onopen=()=>setStatus(true,'Trực tiếp');
+  ws.onmessage=ev=>{
+    const k=JSON.parse(ev.data).data?.k; if(!k)return;
+    const s=k.s, d=D[s]||(D[s]={sp:[]});
+    if(d.t&&d.t!==k.t){d.sp=[]}  // sang ngày mới
+    d.t=k.t;d.o=+k.o;d.h=+k.h;d.l=+k.l;d.c=+k.c;
+    dirty=true;
+  };
+  ws.onclose=()=>{setStatus(false,'Mất kết nối, đang thử lại');retry=setTimeout(connect,3000)};
+  ws.onerror=()=>ws&&ws.close();
+}
+function setStatus(on,t){$('#dot').className='dot'+(on?' on':'');$('#st').textContent=t}
+
+const META={};
+function kindLabel(s){
+  const t=(META[s]||{}).u;
+  return t==='EQUITY'?'Cổ phiếu · Perpetual':t==='COMMODITY'?'Hàng hóa · Perpetual':t==='INDEX'?'Chỉ số · Perpetual':'Perpetual';
+}
+function setKinds(){
+  listEl.querySelectorAll('.row').forEach(li=>{
+    const [b,q]=parts(li.dataset.s), sm=li.querySelector('.sym small');
+    if(sm)sm.textContent=q+' '+kindLabel(li.dataset.s);
+  });
+}
+async function loadSymbols(){
+  try{
+    const r=await fetch(REST+'exchangeInfo').then(r=>r.json());
+    const ok=r.symbols.filter(x=>/PERPETUAL/.test(x.contractType)&&x.status==='TRADING');
+    ok.forEach(x=>META[x.symbol]={c:x.contractType,u:x.underlyingType});
+    valid=new Set(ok.map(x=>x.symbol));
+    $('#syms').innerHTML=[...valid].sort().map(s=>`<option value="${s}">${(META[s].u==='EQUITY'?'Cổ phiếu':'')}</option>`).join('');
+    setKinds();
+  }catch(e){}
+}
+
+/* ---------- actions ---------- */
+async function addSym(raw){
+  let s=raw.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!s)return;
+  if(valid&&!valid.has(s)&&valid.has(s+'USDT'))s+='USDT';
+  else if(!valid&&!/(USDT|USDC|BUSD)$/.test(s))s+='USDT';
+  if(!valid||!valid.has(s)){
+    try{
+      const r=await fetch(REST+'ticker/price?symbol='+s).then(r=>r.json());
+      if(!r.price)throw 0;
+    }catch(e){say(`Không tìm thấy hợp đồng “${raw.trim()}” trên Binance Futures.`);return}
+  }
+  if(symbols.includes(s)){say(`${s} đã có trong danh sách.`);return}
+  say('');
+  symbols.push(s);save();
+  await history(s);
+  buildRows();setKinds();connect();
+}
+function removeSym(s){
+  symbols=symbols.filter(x=>x!==s);delete D[s];save();buildRows();connect();
+}
+$('#f').onsubmit=e=>{e.preventDefault();const i=$('#inp');addSym(i.value);i.value=''};
+$('#sort').onchange=()=>{try{localStorage.setItem(KEY+'-sort',$('#sort').value)}catch(e){}applySort()};
+
+/* ---------- kéo thả đổi vị trí ---------- */
+let dragging=null;
+function commitOrder(){
+  symbols=[...listEl.querySelectorAll('.row')].map(r=>r.dataset.s);
+  save();
+  const sel=$('#sort');
+  if(sel.value!=='manual'){sel.value='manual';try{localStorage.setItem(KEY+'-sort','manual')}catch(e){}}
+}
+listEl.addEventListener('pointerdown',e=>{
+  const g=e.target.closest('.grip'); if(!g)return;
+  e.preventDefault();
+  dragging=g.closest('.row'); dragging.classList.add('drag');
+  try{g.setPointerCapture(e.pointerId)}catch(_){}
+});
+listEl.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  for(const r of listEl.querySelectorAll('.row')){
+    if(r===dragging)continue;
+    const b=r.getBoundingClientRect();
+    if(e.clientY>b.top&&e.clientY<b.bottom){
+      listEl.insertBefore(dragging,e.clientY<b.top+b.height/2?r:r.nextSibling);break;
+    }
+  }
+});
+function endDrag(){
+  if(!dragging)return;
+  dragging.classList.remove('drag');dragging=null;commitOrder();
+}
+listEl.addEventListener('pointerup',endDrag);
+listEl.addEventListener('pointercancel',endDrag);
+listEl.addEventListener('keydown',e=>{
+  const g=e.target.closest('.grip'); if(!g||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;
+  e.preventDefault();
+  const li=g.closest('.row');
+  if(e.key==='ArrowUp'&&li.previousElementSibling)listEl.insertBefore(li,li.previousElementSibling);
+  if(e.key==='ArrowDown'&&li.nextElementSibling)listEl.insertBefore(li.nextElementSibling,li);
+  commitOrder();g.focus();
+});
+
+/* ---------- clock + render loop ---------- */
+function tick(){
+  const left=lastDay+DAY-Date.now();
+  if(left<=0){lastDay=dayStart();Promise.all(symbols.map(history)).then(()=>{dirty=true})}
+  const L=Math.max(0,left),p=n=>String(n).padStart(2,'0');
+  $('#cd').textContent=`${p(Math.floor(L/3.6e6))}:${p(Math.floor(L/6e4)%60)}:${p(Math.floor(L/1e3)%60)}`;
+}
+setInterval(tick,1000);
+setInterval(()=>{if(dirty&&!dragging){dirty=false;symbols.forEach(update);applySort()}},500);
+
+/* ---------- start ---------- */
+(async()=>{
+  try{const v=localStorage.getItem(KEY+'-sort');if(v)$('#sort').value=v}catch(e){}
+  buildRows();tick();save();
+  loadSymbols();
+  await Promise.all(symbols.map(history));
+  dirty=true;connect();
+})();
+</script>
+</body>
+</html>
